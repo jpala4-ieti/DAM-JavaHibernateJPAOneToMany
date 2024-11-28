@@ -18,6 +18,7 @@ public class CartItemTest {
     public static void setup() {
         // Inicialitzar Hibernate
         Manager.createSessionFactory();
+        // Manager.createSessionFactory("hibernate-mysql.properties");
     }
     
     @AfterAll

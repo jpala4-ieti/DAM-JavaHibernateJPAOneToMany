@@ -2,7 +2,7 @@
 
 En aquest projecte hi ha un exemple de Hibernate tipus XML One To Many
 
-### Compilació i funcionament ###
+## Compilació i funcionament ###
 
 Cal el 'Maven' per compilar el projecte
 ```bash
@@ -20,3 +20,17 @@ Per executar el projecte a Linux/macOS cal
 ```bash
 ./run.sh com.project.Main
 ```
+
+## Docker per treballar amb mysql
+
+### Iniciar el contenedor
+docker-compose up -d
+
+### Verificar que está funcionando
+docker-compose ps
+
+### Ver los logs si hay algún problema
+docker-compose logs
+
+### Para detener el contenedor
+docker-compose down
