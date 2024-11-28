@@ -61,61 +61,6 @@ public class Manager {
         return result;
     }
 
-    public static void updateCart(long cartId, String type, Set<Item> items) {
-        Session session = factory.openSession();
-        Transaction tx = null;
-        try {
-            tx = session.beginTransaction();
-            
-            // Obtenim el cart
-            Cart cart = session.get(Cart.class, cartId);
-            if (cart == null) {
-                throw new RuntimeException("Cart not found with id: " + cartId);
-            }
-            
-            // Actualitzem el tipus
-            cart.setType(type);
-            
-            // Netegem les relacions antigues correctament (ambdós costats)
-            if (cart.getItems() != null) {
-                for (Item oldItem : new HashSet<>(cart.getItems())) {
-                    oldItem.setCart(null);  // Això també eliminarà l'item del cart
-                }
-            }
-            
-            // Establim les noves relacions
-            if (items != null) {
-                for (Item item : items) {
-                    Item managedItem = session.get(Item.class, item.getItemId());
-                    if (managedItem != null) {
-                        cart.addItem(managedItem);  // Utilitzem el mètode helper que manté la bidireccionalitat
-                    }
-                }
-            }
-            
-            session.merge(cart);
-            tx.commit();
-            
-        } catch (HibernateException e) {
-            if (tx != null) tx.rollback();
-            e.printStackTrace();
-        } finally {
-            session.close();
-        }
-    }
-    
-    public static Cart getCartWithItems(long cartId) {
-        Cart cart;
-        try (Session session = factory.openSession()) {
-            Transaction tx = session.beginTransaction();
-            cart = session.get(Cart.class, cartId);
-            // Eagerly fetch the items collection
-            cart.getItems().size();
-            tx.commit();
-        }
-        return cart;
-    }
-
     public static Item addItem(String name){
         Session session = factory.openSession();
         Transaction tx = null;
@@ -150,7 +95,58 @@ public class Manager {
         } finally {
             session.close(); 
         }
-    }    
+    }
+
+    public static void updateCart(long cartId, String type, Set<Item> items) {
+        Session session = factory.openSession();
+        Transaction tx = null;
+        try {
+            tx = session.beginTransaction();
+            
+            Cart cart = session.get(Cart.class, cartId);
+            if (cart == null) {
+                throw new RuntimeException("Cart not found with id: " + cartId);
+            }
+            
+            cart.setType(type);
+            
+            if (cart.getItems() != null) {
+                for (Item oldItem : new HashSet<>(cart.getItems())) {
+                    cart.removeItem(oldItem);
+                }
+            }
+            
+            if (items != null) {
+                for (Item item : items) {
+                    Item managedItem = session.get(Item.class, item.getItemId());
+                    if (managedItem != null) {
+                        cart.addItem(managedItem);
+                    }
+                }
+            }
+            
+            session.merge(cart);
+            tx.commit();
+            
+        } catch (HibernateException e) {
+            if (tx != null) tx.rollback();
+            e.printStackTrace();
+        } finally {
+            session.close();
+        }
+    }
+        
+    public static Cart getCartWithItems(long cartId) {
+        Cart cart;
+        try (Session session = factory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            cart = session.get(Cart.class, cartId);
+            // Eagerly fetch the items collection
+            cart.getItems().size();
+            tx.commit();
+        }
+        return cart;
+    }
 
     public static <T> T getById(Class<? extends T> clazz, long id){
         Session session = factory.openSession();

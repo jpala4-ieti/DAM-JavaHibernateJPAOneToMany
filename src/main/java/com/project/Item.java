@@ -44,23 +44,7 @@ public class Item implements Serializable {
     }
 
     public void setCart(Cart cart) {
-        // Evitem recursió infinita
-        if (this.cart != null && this.cart.equals(cart)) {
-            return;
-        }
-        
-        // Eliminem l'item del cart anterior si existeix
-        if (this.cart != null) {
-            this.cart.getItems().remove(this);
-        }
-        
-        // Assignem el nou cart
         this.cart = cart;
-        
-        // Afegim l'item al nou cart si existeix
-        if (cart != null) {
-            cart.getItems().add(this);
-        }
     }
 
     @Override

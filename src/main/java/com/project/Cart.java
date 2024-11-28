@@ -16,7 +16,6 @@ public class Cart implements Serializable {
     private String type;
 
     @OneToMany(mappedBy = "cart", 
-    cascade = CascadeType.ALL, 
     fetch = FetchType.EAGER)
     private Set<Item> items = new HashSet<>();
 
@@ -47,7 +46,6 @@ public class Cart implements Serializable {
     }
 
     public void setItems(Set<Item> items) {
-        this.items.clear();
         if (items != null) {
             items.forEach(this::addItem);
         }
