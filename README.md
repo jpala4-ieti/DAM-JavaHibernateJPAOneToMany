@@ -1,4 +1,4 @@
-# Exemple Canvas Hibernate tipus XML One To Many #
+# Exemple Canvas Hibernate tipus JPA One To Many #
 
 En aquest projecte hi ha un exemple de Hibernate tipus XML One To Many
 
@@ -8,6 +8,7 @@ Cal el 'Maven' per compilar el projecte
 ```bash
 mvn clean
 mvn compile
+mvn test
 ```
 
 Per executar el projecte a Windows cal

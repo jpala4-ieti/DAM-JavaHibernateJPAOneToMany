@@ -8,13 +8,13 @@ import java.io.Serializable;
 public class Item implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @Column(name="itemID", unique=true, nullable=false)    
     private long itemId;
 
     private String name;
-
     @ManyToOne
-    @JoinColumn(name = "cartId")
+    @JoinColumn(name="cartId")
     private Cart cart;
 
     public Item() {}
@@ -50,5 +50,19 @@ public class Item implements Serializable {
     @Override
     public String toString() {
         return this.getItemId() + ": " + this.getName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        Item item = (Item) o;
+        return itemId == item.itemId;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Long.hashCode(itemId);
     }
 }

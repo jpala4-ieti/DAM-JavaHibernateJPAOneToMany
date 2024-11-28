@@ -10,7 +10,8 @@ import java.util.Set;
 public class Cart implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @Column(name="cartId", unique=true, nullable=false)
     private long cartId;
 
     private String type;
@@ -71,5 +72,19 @@ public class Cart implements Serializable {
             str.append(item.getName());
         }
         return this.getCartId() + ": " + this.getType() + ", Items: [" + str + "]";
-    }   
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        Cart cart = (Cart) o;
+        return cartId == cart.cartId;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Long.hashCode(cartId);
+    }    
 }

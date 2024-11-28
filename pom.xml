@@ -63,6 +63,14 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.47.1.0</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.11.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <profiles>
