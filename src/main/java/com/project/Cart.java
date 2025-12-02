@@ -3,7 +3,9 @@ package com.project;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "carts")
@@ -12,13 +14,18 @@ public class Cart implements Serializable {
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     @Column(name="cartId", unique=true, nullable=false)
-    private long cartId;
+    private Long cartId;
 
     private String type;
 
-    @OneToMany(mappedBy = "cart", 
-    fetch = FetchType.EAGER)
+    // RENDIMENT: Canviat a LAZY per evitar carregar tota la BBDD en memòria.
+    // Cascade ALL permet que si guardes el Cart, es guardin els Items.
+    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Item> items = new HashSet<>();
+
+    // UUID per a identitat única abans de persistir
+    @Column(name = "uuid", nullable = false, updatable = false, unique = true)
+    private String uuid = UUID.randomUUID().toString();
 
     public Cart() {}
 
@@ -26,11 +33,11 @@ public class Cart implements Serializable {
         this.type = type;
     }
 
-    public long getCartId() {
+    public Long getCartId() {
         return cartId;
     }
 
-    public void setCartId(long cartId) {
+    public void setCartId(Long cartId) {
         this.cartId = cartId;
     }
 
@@ -47,11 +54,14 @@ public class Cart implements Serializable {
     }
 
     public void setItems(Set<Item> items) {
+        // Neteja i afegeix per mantenir la referència de la col·lecció
+        this.items.clear();
         if (items != null) {
             items.forEach(this::addItem);
         }
     }
 
+    // Mètodes helper per mantenir la coherència bidireccional
     public void addItem(Item item) {
         items.add(item);
         item.setCart(this);
@@ -64,27 +74,20 @@ public class Cart implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder();
-        for (Item item : items) {
-            if (str.length() > 0) {
-                str.append(" | ");
-            }
-            str.append(item.getName());
-        }
-        return this.getCartId() + ": " + this.getType() + ", Items: [" + str + "]";
+        // No imprimim 'items' aquí per evitar LazyInitializationException
+        return cartId + ": " + type; 
     }
     
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        
+        if (!(o instanceof Cart)) return false;
         Cart cart = (Cart) o;
-        return cartId == cart.cartId;
+        return Objects.equals(uuid, cart.uuid);
     }
     
     @Override
     public int hashCode() {
-        return Long.hashCode(cartId);
+        return Objects.hash(uuid);
     }    
 }

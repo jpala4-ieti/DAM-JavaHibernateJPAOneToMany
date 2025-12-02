@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +36,7 @@ public class CartItemTest {
         assertNotNull(testCart, "El carret no hauria de ser null després de crear-lo");
         assertTrue(testCart.getCartId() > 0, "El carret hauria de tenir un ID vàlid després de crear-lo");
         assertEquals("Carret de Prova", testCart.getType(), "El tipus de carret hauria de coincidir amb l'entrada");
+        // Nota: Amb Lazy Loading, accedir a items aquí és segur perquè la col·lecció està buida i inicialitzada en el constructor
         assertTrue(testCart.getItems().isEmpty(), "El nou carret hauria de tenir el conjunt d'items buit");
     }
     
@@ -62,11 +64,13 @@ public class CartItemTest {
         // Actualitzar el carret amb els nous items
         Manager.updateCart(testCart.getCartId(), testCart.getType(), items);
         
-        // Obtenir el carret actualitzat de la base de dades
+        // Obtenir el carret actualitzat de la base de dades amb els items carregats (JOIN FETCH)
         Cart updatedCart = Manager.getCartWithItems(testCart.getCartId());
         
         assertNotNull(updatedCart, "El carret actualitzat no hauria de ser null");
         assertEquals(2, updatedCart.getItems().size(), "El carret hauria de tenir 2 items");
+        
+        // Gràcies a la implementació de equals() amb UUID, això funciona correctament
         assertTrue(updatedCart.getItems().contains(testItem1), "El carret hauria de contenir l'item 1");
         assertTrue(updatedCart.getItems().contains(testItem2), "El carret hauria de contenir l'item 2");
     }
@@ -79,15 +83,17 @@ public class CartItemTest {
         Manager.updateItem(testItem1.getItemId(), newName);
         
         // Obtenir l'item actualitzat
-        Item updatedItem = Manager.getById(Item.class, testItem1.getItemId());
+        Item updatedItem = findItemById(testItem1.getItemId());
+        
+        assertNotNull(updatedItem, "L'item no hauria de ser null");
         assertEquals(newName, updatedItem.getName(), "El nom de l'item hauria d'estar actualitzat");
     }
     
     @Test
     @Order(5)
     public void testListItems() {
-        // Provar llistar tots els items
-        Collection<?> items = Manager.listCollection(Item.class);
+        // Provar llistar tots els items usant el nou mètode findAll
+        Collection<?> items = Manager.findAll(Item.class);
         assertNotNull(items, "La col·lecció d'items no hauria de ser null");
         assertTrue(items.size() >= 2, "Hauria d'haver-hi almenys 2 items");
     }
@@ -99,8 +105,9 @@ public class CartItemTest {
         Cart cart = Manager.getCartWithItems(testCart.getCartId());
         Set<Item> items = new HashSet<>(cart.getItems());
         
-        // Eliminar un item
-        items.remove(testItem1);
+        // Eliminar un item del set
+        items.remove(testItem1); // Funciona gràcies al equals() basat en UUID/ID
+        
         Manager.updateCart(cart.getCartId(), cart.getType(), items);
         
         // Verificar l'actualització
@@ -118,8 +125,8 @@ public class CartItemTest {
         Manager.delete(Item.class, testItem2.getItemId());
         
         // Verificar l'eliminació
-        assertNull(Manager.getById(Item.class, testItem1.getItemId()), "L'item 1 hauria d'estar eliminat");
-        assertNull(Manager.getById(Item.class, testItem2.getItemId()), "L'item 2 hauria d'estar eliminat");
+        assertNull(findItemById(testItem1.getItemId()), "L'item 1 hauria d'estar eliminat");
+        assertNull(findItemById(testItem2.getItemId()), "L'item 2 hauria d'estar eliminat");
     }
     
     @Test
@@ -129,6 +136,24 @@ public class CartItemTest {
         Manager.delete(Cart.class, testCart.getCartId());
         
         // Verificar l'eliminació
-        assertNull(Manager.getById(Cart.class, testCart.getCartId()), "El carret hauria d'estar eliminat");
+        assertNull(findCartById(testCart.getCartId()), "El carret hauria d'estar eliminat");
+    }
+
+    // --- MÈTODES HELPER PRIVATS PER SUBSTITUIR getById ---
+    
+    private Item findItemById(Long id) {
+        List<Item> items = Manager.findAll(Item.class);
+        return items.stream()
+                .filter(i -> i.getItemId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Cart findCartById(Long id) {
+        List<Cart> carts = Manager.findAll(Cart.class);
+        return carts.stream()
+                .filter(c -> c.getCartId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 }
