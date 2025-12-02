@@ -34,3 +34,7 @@ node_modules
 target/*
 target/classes
 target/maven-status
+
+dependency-reduced-pom.xml
+
+data/*.db
