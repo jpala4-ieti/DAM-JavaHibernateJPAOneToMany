@@ -9,16 +9,17 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
-        // 0. PREPARACIÓ DE L'ENTORN
+        
+        // PREPARACIÓ: Crea el directori "data" si no existeix i inicialitza Hibernate.
         String basePath = System.getProperty("user.dir") + "/data/";
         File dir = new File(basePath);
         if (!dir.exists()) dir.mkdirs();
 
         Manager.createSessionFactory();
 
-        // ---------------------------------------------------------------
-        // PUNT 1: CREACIÓ DE DADES (CREATE)
-        // ---------------------------------------------------------------
+        // ───────────────────────────────────────────────────────────────
+        // CRUD - CREATE: Creació d'entitats a la BBDD
+        // ───────────────────────────────────────────────────────────────
         
         Cart refCart1 = Manager.addCart("Cart 1");
         Cart refCart2 = Manager.addCart("Cart 2");
@@ -26,121 +27,114 @@ public class Main {
 
         Item refItem1 = Manager.addItem("Item 1");
         Item refItem2 = Manager.addItem("Item 2");
-        Item refItem3 = Manager.addItem("Item 3");
+        Manager.addItem("Item 3");
         Item refItem4 = Manager.addItem("Item 4");
         Item refItem5 = Manager.addItem("Item 5");
         Item refItem6 = Manager.addItem("Item 6");
 
-        printState("Punt 1: Després de la creació inicial d'elements");
+        printState("1. CREACIÓ", "Després de la creació inicial");
 
-        // ---------------------------------------------------------------
-        // PUNT 2: ASSIGNACIÓ D'ITEMS (UPDATE)
-        // ---------------------------------------------------------------
+        // ───────────────────────────────────────────────────────────────
+        // CRUD - UPDATE: Assignació d'Items a Carts (establir relacions)
+        // ───────────────────────────────────────────────────────────────
 
-        // Cart 1: Assignem Item 1 i Item 2
         Set<Item> itemsCart1 = new HashSet<>();
         itemsCart1.add(refItem1);
         itemsCart1.add(refItem2);
         Manager.updateCart(refCart1.getCartId(), refCart1.getType(), itemsCart1);
 
-        // Cart 2: Assignem Item 4 i Item 5
         Set<Item> itemsCart2 = new HashSet<>();
         itemsCart2.add(refItem4);
         itemsCart2.add(refItem5);
         Manager.updateCart(refCart2.getCartId(), refCart2.getType(), itemsCart2);
 
-        printState("Punt 2: Després d'actualitzar carrets");
+        printState("2. ASSIGNACIÓ D'ITEMS", "Després d'actualitzar relacions");
 
-        // ---------------------------------------------------------------
-        // PUNT 3: ACTUALITZACIONS DE NOMS
-        // ---------------------------------------------------------------
+        // ───────────────────────────────────────────────────────────────
+        // CRUD - UPDATE: Modificació de noms d'entitats existents
+        // ───────────────────────────────────────────────────────────────
 
-        // Actualitzem noms dels Items
-        Manager.updateItem(refItem1.getItemId(), "Item 1 actualitzat");
-        Manager.updateItem(refItem4.getItemId(), "Item 4 actualitzat");
+        Manager.updateItem(refItem1.getItemId(), "Item 1 ACTUALITZAT");
+        Manager.updateCart(refCart1.getCartId(), "Cart 1 ACTUALITZAT", itemsCart1);
 
-        // Actualitzem noms dels Carrets (hem de tornar a passar els items per no perdre la relació)
-        // Nota: En un entorn real, Manager.updateCart hauria de permetre passar null als items per no tocar-los,
-        // però segons el teu codi actual, cal passar el Set.
-        
-        // Cart 1 -> "Cart 1 actualitzat" (Manté Item 1 i 2)
-        // Recarreguem els items locals amb els nous noms o simplement passem les referències
-        // Hibernate ja sap que són els mateixos objectes per ID/UUID.
-        Manager.updateCart(refCart1.getCartId(), "Cart 1 actualitzat", itemsCart1);
-        
-        // Cart 2 -> "Cart 2 actualitzat" (Manté Item 4 i 5)
-        Manager.updateCart(refCart2.getCartId(), "Cart 2 actualitzat", itemsCart2);
+        printState("3. ACTUALITZACIÓ DE CAMPS", "Després d'actualitzar noms");
 
-        printState("Punt 3: Després d'actualització de noms");
+        // ───────────────────────────────────────────────────────────────
+        // CRUD - DELETE: Eliminació d'entitats
+        // ───────────────────────────────────────────────────────────────
 
-        // ---------------------------------------------------------------
-        // PUNT 4: ESBORRATS (DELETE)
-        // ---------------------------------------------------------------
-
-        // Esborrem Cart 3
         Manager.delete(Cart.class, refCart3.getCartId());
-
-        // Esborrem Item 6
         Manager.delete(Item.class, refItem6.getItemId());
 
-        // Imprimim l'estat. Nota: El punt 4 de la teva sortida no mostra el llistat complet d'items,
-        // només els que estan assignats o existents. El mètode genèric mostrarà el que quedi a la BD.
-        printState("Punt 4: després d'esborrat");
+        printState("4. ESBORRAT", "Després d'esborrar");
 
-        // ---------------------------------------------------------------
-        // PUNT 5: RECUPERACIÓ ESPECÍFICA
-        // ---------------------------------------------------------------
+        // ───────────────────────────────────────────────────────────────
+        // CRUD - READ: Recuperació amb LAZY LOADING
+        // ───────────────────────────────────────────────────────────────
         
-        System.out.println("Punt 5: Recuperació d'items d'un carret específic");
+        System.out.println("--- 5. RECUPERACIÓ EAGER ---");
+        
+        // getCartWithItems: Carrega el Cart I els seus Items dins la mateixa sessió
+        // (necessari perquè items és LAZY i fora de sessió donaria LazyInitializationException)
         Cart cart = Manager.getCartWithItems(refCart1.getCartId());
         
         if (cart != null) {
             System.out.println("Items del carret '" + cart.getType() + "':");
             if (cart.getItems() != null) {
-                // Ordenem per ID per garantir l'ordre de sortida (1, després 2)
+                // STREAM API: Ordenem i iterem la col·lecció de forma funcional
                 cart.getItems().stream()
                     .sorted(Comparator.comparing(Item::getItemId))
                     .forEach(item -> System.out.println("- " + item.getName()));
             }
         }
 
+        // Tanca el SessionFactory i allibera recursos
         Manager.close();
     }
 
     /**
-     * Mètode auxiliar per imprimir l'estat exactament amb el format sol·licitat
-     * Format: "ID: Nom, Items: [Item A | Item B]"
+     * Mètode auxiliar per mostrar l'estat actual de la BBDD.
+     * @param title Títol de la secció (ex: "1. CREACIÓ")
+     * @param subtitle Descripció (ex: "Després de la creació inicial")
      */
-    private static void printState(String header) {
-        System.out.println(header);
+    private static void printState(String title, String subtitle) {
+        System.out.println("--- " + title + " ---");
+        System.out.println("[" + subtitle + "]");
 
-        // 1. Imprimim Carrets amb els seus items formatats
+        // ─── CARTS ───
+        System.out.println("CARTS:");
         List<Cart> carts = Manager.findAllCartsWithItems();
-        
-        // Ordenem carrets per ID per garantir l'ordre 1, 2, 3...
         carts.sort(Comparator.comparing(Cart::getCartId));
 
         for (Cart c : carts) {
+            // Construïm la llista d'items: [Item A, Item B] o []
             String itemsStr = "[]";
             if (c.getItems() != null && !c.getItems().isEmpty()) {
-                // Construïm l'string [Item X | Item Y]
+                // STREAM PIPELINE: Ordena per ID i uneix noms amb ", "
                 String joinedNames = c.getItems().stream()
-                    .sorted(Comparator.comparing(Item::getItemId)) // Ordenem items per ID dins la llista
+                    .sorted(Comparator.comparing(Item::getItemId))
                     .map(Item::getName)
-                    .collect(Collectors.joining(" | "));
+                    .collect(Collectors.joining(", "));
                 itemsStr = "[" + joinedNames + "]";
             }
-            System.out.println(c.getCartId() + ": " + c.getType() + ", Items: " + itemsStr);
+            // Format: Cart [ID=X, Type=Y, Items: [...]]
+            System.out.println("Cart [ID=" + c.getCartId() + 
+                             ", Type=" + c.getType() + 
+                             ", Items: " + itemsStr + "]");
         }
 
-        // 2. Imprimim Llistat d'Items a sota
-        // Nota: Al Punt 4 de la teva sortida d'exemple sembla que no mostra items orfes esborrats.
-        // Aquí mostrem tots els items que queden a la BBDD.
+        // ─── ITEMS ───
+        System.out.println("ITEMS:");
         List<Item> items = Manager.findAll(Item.class);
         items.sort(Comparator.comparing(Item::getItemId));
         
         for (Item item : items) {
-            System.out.println(item.getItemId() + ": " + item.getName());
+            // Format: Item [ID=X, Name=Y]
+            System.out.println("Item [ID=" + item.getItemId() + 
+                             ", Name=" + item.getName() + "]");
         }
+        
+        // Separador visual entre seccions
+        System.out.println("------------------------------");
     }
 }
